@@ -7,9 +7,8 @@ export function Header() {
   return (
     <header className="site-header">
       <div className="header-container">
-        <NavLink to={APP_ROUTES.HOME} className="header-logo">
-          <span className="logo-text text-gradient">PRISM</span>
-          <span className="logo-sub">METHOD</span>
+        <NavLink to={APP_ROUTES.HOME} className="header-logo" style={{ display: 'flex', alignItems: 'center' }}>
+          <img src="/logo.png" alt="Prism Method" style={{ height: '32px' }} />
         </NavLink>
         
         <nav className="header-nav">

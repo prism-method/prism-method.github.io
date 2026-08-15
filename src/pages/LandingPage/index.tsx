@@ -11,6 +11,7 @@ export default function LandingPage() {
   return (
     <div style={{ padding: 'var(--space-12) var(--space-6)', maxWidth: 'var(--layout-max-width)', margin: '0 auto' }}>
       <section style={{ textAlign: 'center', margin: 'var(--space-16) 0 var(--space-24)' }} className="animate-slide-up">
+        <img src="/banner.png" alt="Prism Method Banner" style={{ maxWidth: '100%', height: 'auto', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-8)', boxShadow: '0 8px 32px rgba(138, 43, 226, 0.2)' }} />
         <h1 style={{ fontSize: 'clamp(2.5rem, 8vw, 4.5rem)', letterSpacing: '-0.02em', marginBottom: 'var(--space-6)' }}>
           Video preparation <br />
           <span className="text-gradient">for content creators</span>
