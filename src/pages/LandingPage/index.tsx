@@ -60,6 +60,10 @@ export default function LandingPage() {
           </p>
         </Card>
       </section>
+      <section style={{ textAlign: 'center', marginTop: 'var(--space-24)', marginBottom: 'var(--space-12)' }}>
+        <img src="/banana.png" alt="Antigravity Banana" style={{ width: '150px', height: '150px', borderRadius: '50%', boxShadow: '0 0 40px rgba(138, 43, 226, 0.4)', animation: 'float 6s ease-in-out infinite' }} />
+        <p style={{ marginTop: 'var(--space-4)', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Powered by Antigravity</p>
+      </section>
     </div>
   );
 }
