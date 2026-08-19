@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { MediaInfo, WorkerOutMessage } from '../types/media';
 import { UPLOAD_LIMIT_BYTES } from '../config/constants';
+import MediaWorker from '../workers/mediaWorker?worker';
 
 // ── Processing state ─────────────────────────────────────────────────────────
 
@@ -144,10 +145,7 @@ export function useMediaProcessor(): UseMediaProcessorReturn {
 
   const spawnWorker = useCallback(() => {
     workerRef.current?.terminate();
-    const worker = new Worker(
-      new URL('../workers/mediaWorker.ts', import.meta.url),
-      { type: 'module' }
-    );
+    const worker = new MediaWorker();
     workerRef.current = worker;
     return worker;
   }, []);
