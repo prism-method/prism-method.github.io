@@ -28,7 +28,22 @@ export function Header() {
             <NavLink to={APP_ROUTES.PRIVACY} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
               Privacy
             </NavLink>
-            <a href="/#companion" className="nav-link" onClick={() => setMobileMenuOpen(false)}>
+            <a 
+              href="#" 
+              className="nav-link" 
+              onClick={(e) => {
+                e.preventDefault();
+                setMobileMenuOpen(false);
+                if (window.location.hash === '#/' || window.location.hash === '') {
+                  document.getElementById('companion')?.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  navigate(APP_ROUTES.HOME);
+                  setTimeout(() => {
+                    document.getElementById('companion')?.scrollIntoView({ behavior: 'smooth' });
+                  }, 100);
+                }
+              }}
+            >
               Companion
             </a>
             <a href="#" className="nav-link icon-link" aria-label="Discord" onClick={() => setMobileMenuOpen(false)}>

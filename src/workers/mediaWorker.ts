@@ -338,14 +338,20 @@ async function optimize(file: File, mediaInfo: MediaInfo): Promise<void> {
   if (msg.type === 'INSPECT') {
     cancelled = false;
     inspect(msg.file, msg.limitBytes).catch((err: unknown) => {
-      const message = err instanceof Error ? err.message : 'Unknown worker error.';
-      postOut({ type: 'ERROR', message });
+      let message = 'Unknown worker error.';
+      if (err instanceof Error) message = err.message;
+      else if (typeof err === 'string') message = err;
+      else if (err && typeof err === 'object') message = JSON.stringify(err);
+      postOut({ type: 'ERROR', message: `Inspect error: ${message}` });
     });
   } else if (msg.type === 'OPTIMIZE') {
     cancelled = false;
     optimize(msg.file, msg.mediaInfo).catch((err: unknown) => {
-      const message = err instanceof Error ? err.message : 'Unknown worker error.';
-      postOut({ type: 'ERROR', message });
+      let message = 'Unknown worker error.';
+      if (err instanceof Error) message = err.message;
+      else if (typeof err === 'string') message = err;
+      else if (err && typeof err === 'object') message = JSON.stringify(err);
+      postOut({ type: 'ERROR', message: `Optimize error: ${message}` });
     });
   }
 });
