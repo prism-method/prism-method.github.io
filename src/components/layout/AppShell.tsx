@@ -8,7 +8,6 @@ import type { BaseProps } from '../../types';
 export function AppShell({ children }: BaseProps) {
   return (
     <div className="app-shell">
-      <div className="scanline"></div>
       <Header />
       <main className="app-main">
         {children || <Outlet />}

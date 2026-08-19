@@ -72,16 +72,26 @@ export function DragDropZone({ onFileSelect, accept, className = '' }: DragDropZ
         className="drag-drop-input"
         aria-hidden="true"
       />
+      <div className="drag-drop-inner-ring" />
       <div className="drag-drop-content">
         <div className="drag-drop-icon-wrapper">
           <Icon name="upload" size={48} />
         </div>
         <h3 className="drag-drop-title">
-          {isDragging ? 'Drop video here' : 'Select or drag a video'}
+          {isDragging ? 'Drop media to process' : 'Select or drag a video'}
         </h3>
+        
+        <div className="drag-drop-formats">
+          <span className="format-badge">MP4</span>
+          <span className="format-badge">MOV</span>
+          <span className="format-badge">MKV</span>
+          <span className="format-badge">WEBM</span>
+        </div>
+        
         <p className="drag-drop-desc">
-          MP4, WebM, or QuickTime up to 300 MB
+          Maximum file size: 300 MB
         </p>
+
         <div className="drag-drop-action">
           <Button variant="secondary" onClick={(e) => {
             e.stopPropagation();
@@ -89,6 +99,11 @@ export function DragDropZone({ onFileSelect, accept, className = '' }: DragDropZ
           }}>
             Browse Files
           </Button>
+        </div>
+        
+        <div className="drag-drop-footer">
+          <Icon name="check" size={14} color="var(--color-success)" />
+          <span>Local processing — file never leaves your device</span>
         </div>
       </div>
     </div>

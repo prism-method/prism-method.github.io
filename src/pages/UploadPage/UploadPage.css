@@ -1,0 +1,293 @@
+/* ── Page layout ─────────────────────────────────────────────────────── */
+.upload-page {
+  padding: var(--space-12) var(--space-6);
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.upload-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-8);
+  gap: var(--space-4);
+}
+
+.upload-header-text h1 {
+  margin-bottom: var(--space-2);
+}
+
+.upload-header-text p {
+  color: var(--color-text-secondary);
+}
+
+.upload-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* ── Media info grid ──────────────────────────────────────────────────── */
+.media-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.media-info-cell {
+  background: rgba(0,0,0,0.3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.media-info-cell-label {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+}
+
+.media-info-cell-value {
+  font-weight: 600;
+  font-size: 0.9rem;
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+
+/* ── Inspection progress ─────────────────────────────────────────────── */
+.inspection-progress {
+  padding: var(--space-4) 0;
+}
+
+.inspection-progress-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+  font-size: 0.875rem;
+}
+
+.inspection-progress-stage {
+  color: var(--color-text-secondary);
+}
+
+.inspection-progress-pct {
+  color: var(--color-accent-secondary);
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+/* ── Card row header (inspection complete, processing) ────────────────── */
+.card-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.card-row-header h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+/* ── Warning notice (before optimize) ────────────────────────────────── */
+.upload-notice-card {
+  background: rgba(138,93,229,0.05);
+  border-color: rgba(138,93,229,0.25);
+}
+
+.fps-warning {
+  padding: var(--space-3) var(--space-4);
+  background: rgba(255, 170, 0, 0.08);
+  border-left: 3px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+}
+
+.fps-warning strong {
+  color: var(--color-warning);
+}
+
+.info-row {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.info-row-icon {
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.info-row-body h4 {
+  margin-bottom: var(--space-2);
+  color: var(--color-accent-secondary);
+  font-size: 0.95rem;
+}
+
+.info-row-body p {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+.optimize-action {
+  margin-top: var(--space-6);
+}
+
+/* ── Processing state ────────────────────────────────────────────────── */
+.processing-card {
+  padding: var(--space-10);
+}
+
+.processing-card-header {
+  text-align: center;
+  margin-bottom: var(--space-8);
+}
+
+.processing-card-header h3 {
+  margin-bottom: var(--space-2);
+}
+
+.processing-card-header p {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+/* ── Success state ───────────────────────────────────────────────────── */
+.success-card {
+  text-align: center;
+  padding: var(--space-12);
+}
+
+.success-icon {
+  color: var(--color-success);
+  margin-bottom: var(--space-4);
+  filter: drop-shadow(0 0 12px rgba(0,230,118,0.4));
+}
+
+.success-card h3 {
+  margin-bottom: var(--space-2);
+  font-size: 1.75rem;
+}
+
+.success-desc {
+  color: var(--color-text-secondary);
+  max-width: 480px;
+  margin: 0 auto var(--space-8);
+}
+
+.transformations-list {
+  margin-bottom: var(--space-8);
+  text-align: left;
+  background: rgba(0,0,0,0.2);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+}
+
+.transformations-list h4 {
+  margin-bottom: var(--space-4);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
+}
+
+.transformations-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.transformations-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 0.95rem;
+}
+
+.handoff-banner {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+}
+
+.handoff-banner.success {
+  background: rgba(0, 230, 118, 0.08);
+  border: 1px solid rgba(0, 230, 118, 0.2);
+  color: var(--color-success);
+}
+
+.handoff-banner.error {
+  background: rgba(255, 51, 102, 0.1);
+  border: 1px solid rgba(255, 51, 102, 0.25);
+  color: #ff9ab0;
+}
+
+.success-actions {
+  display: flex;
+  gap: var(--space-4);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ── Error / Cancelled states ────────────────────────────────────────── */
+.error-card {
+  border-color: rgba(255, 51, 102, 0.3);
+  background: rgba(255, 51, 102, 0.04);
+}
+
+.error-row {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.error-row-icon {
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.error-row-body h3 {
+  color: var(--color-error);
+  margin-bottom: var(--space-2);
+}
+
+.error-row-body p {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
+  font-size: 0.9rem;
+}
+
+.cancelled-card {
+  text-align: center;
+  padding: var(--space-8);
+}
+
+.cancelled-card h3 {
+  margin-bottom: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.cancelled-card p {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
+  font-size: 0.9rem;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .upload-header {
+    flex-direction: column;
+  }
+}

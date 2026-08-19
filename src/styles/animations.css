@@ -32,10 +32,36 @@
 
 .animate-slide-up {
   animation: slideUp var(--transition-slow) forwards;
+  opacity: 0;
+}
+
+.animate-fade-up {
+  animation: slideUp var(--transition-slow) cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  opacity: 0;
 }
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+@keyframes prismSweep {
+  0% { transform: translateX(-100%) skewX(-15deg); opacity: 0; }
+  50% { opacity: 0.8; }
+  100% { transform: translateX(200%) skewX(-15deg); opacity: 0; }
+}
+
+.animate-prism-sweep {
+  animation: prismSweep 3s ease-in-out infinite;
+}
+
+@keyframes scanPulse {
+  0% { opacity: 0.3; transform: scaleY(1); }
+  50% { opacity: 1; transform: scaleY(1.02); }
+  100% { opacity: 0.3; transform: scaleY(1); }
+}
+
+.animate-scan-pulse {
+  animation: scanPulse 2s ease-in-out infinite;
 }
 
 /* Reduced motion preference */

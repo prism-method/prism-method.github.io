@@ -1,0 +1,62 @@
+.how-page {
+  max-width: 840px;
+}
+
+.how-page-header {
+  margin-bottom: var(--space-16);
+}
+
+.how-page-header h1 {
+  margin-bottom: var(--space-4);
+}
+
+.how-page-intro {
+  font-size: 1.1rem;
+  color: var(--color-text-secondary);
+  line-height: 1.75;
+  max-width: 640px;
+}
+
+.how-timeline-section {
+  margin-bottom: var(--space-20);
+}
+
+.how-steps-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.how-step {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: var(--space-8);
+}
+
+.how-step-number {
+  padding-top: 6px;
+  color: var(--color-accent-primary);
+  font-family: var(--font-mono);
+}
+
+.how-step-body h2 {
+  font-size: 1.4rem;
+  margin-bottom: var(--space-4);
+}
+
+.how-step-body p {
+  color: var(--color-text-secondary);
+  line-height: 1.75;
+  margin-bottom: var(--space-3);
+}
+
+.how-step-body p:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .how-step {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+}

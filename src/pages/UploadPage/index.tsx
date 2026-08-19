@@ -1,3 +1,4 @@
+import React, { useCallback } from 'react';
 import { useMediaProcessor } from '../../hooks/useMediaProcessor';
 import { DragDropZone } from '../../components/ui/DragDropZone';
 import { Card } from '../../components/ui/Card';
@@ -8,6 +9,7 @@ import { ProgressBar } from '../../components/ui/ProgressBar';
 import { formatBytes } from '../../utils/format';
 import type { MediaInfo } from '../../types/media';
 import { useCompanionStatus } from '../../hooks/useCompanionStatus';
+import './UploadPage.css';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -26,24 +28,24 @@ function formatResolution(width: number | null, height: number | null): string {
 
 // ── Sub-components ───────────────────────────────────────────────────────────
 
-function MediaInfoCard({ info }: { info: MediaInfo }) {
+function MediaInfoGrid({ info }: { info: MediaInfo }) {
   const fields: Array<{ label: string; value: string }> = [
-    { label: 'Filename', value: info.filename },
-    { label: 'Size',     value: formatBytes(info.sizeBytes) },
-    { label: 'Type',     value: info.mimeType || 'Unknown' },
-    { label: 'Duration', value: formatDuration(info.durationSeconds) },
+    { label: 'Filename',   value: info.filename },
+    { label: 'Size',       value: formatBytes(info.sizeBytes) },
+    { label: 'Type',       value: info.mimeType || 'Unknown' },
+    { label: 'Duration',   value: formatDuration(info.durationSeconds) },
     { label: 'Resolution', value: formatResolution(info.width, info.height) },
-    { label: 'Tracks',   value: [info.hasVideo ? 'Video' : null, info.hasAudio ? 'Audio' : null].filter(Boolean).join(', ') || '—' },
+    { label: 'Video Codec',value: info.codec || 'Unknown' },
+    { label: 'Framerate',  value: info.fps ? `${info.fps} FPS${info.isVFR ? ' (VFR)' : ''}` : 'Unknown' },
+    { label: 'Audio Codec',value: info.audioCodec ? `${info.audioCodec} (${info.sampleRate} Hz)` : 'None' },
   ];
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
+    <div className="media-info-grid">
       {fields.map(({ label, value }) => (
-        <div key={label} style={{ background: 'rgba(0,0,0,0.25)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
-            {label}
-          </div>
-          <div style={{ fontWeight: 600, fontSize: '0.9rem', wordBreak: 'break-all' }}>{value}</div>
+        <div key={label} className="media-info-cell">
+          <div className="media-info-cell-label">{label}</div>
+          <div className="media-info-cell-value">{value}</div>
         </div>
       ))}
     </div>
@@ -52,10 +54,10 @@ function MediaInfoCard({ info }: { info: MediaInfo }) {
 
 function InspectionProgress({ progress, stage }: { progress: number; stage: string }) {
   return (
-    <div style={{ padding: 'var(--space-4) 0' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-2)', fontSize: '0.875rem' }}>
-        <span style={{ color: 'var(--color-text-secondary)' }}>{stage}</span>
-        <span style={{ color: 'var(--color-accent-secondary)', fontWeight: 600 }}>{progress}%</span>
+    <div className="inspection-progress">
+      <div className="inspection-progress-header">
+        <span className="inspection-progress-stage">{stage}</span>
+        <span className="inspection-progress-pct">{progress}%</span>
       </div>
       <ProgressBar progress={progress} />
     </div>
@@ -73,6 +75,8 @@ export default function UploadPage() {
     errorMessage,
     outputUrl,
     outputFilename,
+    outputFile,
+    transformations,
     startInspection,
     startOptimization,
     cancel,
@@ -81,34 +85,57 @@ export default function UploadPage() {
 
   const isCompanionInstalled = useCompanionStatus();
 
+  const [handoffStatus, setHandoffStatus] = React.useState<'idle' | 'sent' | 'error'>('idle');
+  const [handoffError, setHandoffError] = React.useState<string | null>(null);
+
+  const sendToTikTok = useCallback(() => {
+    if (!outputFile) return;
+    setHandoffStatus('idle');
+    setHandoffError(null);
+
+    const onSent = () => {
+      setHandoffStatus('sent');
+      window.removeEventListener('prism-handoff-sent', onSent);
+      window.removeEventListener('prism-handoff-error', onErr);
+    };
+    const onErr = (e: Event) => {
+      const reason = (e as CustomEvent).detail?.reason ?? 'Handoff failed. Make sure Prism Companion is installed.';
+      setHandoffStatus('error');
+      setHandoffError(reason);
+      window.removeEventListener('prism-handoff-sent', onSent);
+      window.removeEventListener('prism-handoff-error', onErr);
+    };
+    window.addEventListener('prism-handoff-sent', onSent);
+    window.addEventListener('prism-handoff-error', onErr);
+    window.postMessage({ type: 'PRISM_HANDOFF', file: outputFile }, window.location.origin);
+  }, [outputFile]);
+
   return (
-    <div style={{ padding: 'var(--space-12) var(--space-6)', maxWidth: 'var(--layout-max-width)', margin: '0 auto', width: '100%' }}>
+    <div className="upload-page">
 
       {/* Page header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-8)' }}>
-        <div>
-          <h1 style={{ marginBottom: 'var(--space-2)' }}>Upload Media</h1>
-          <p style={{ color: 'var(--color-text-secondary)' }}>
-            Prepare your video for publishing. All processing runs locally in your browser.
-          </p>
+      <div className="upload-header">
+        <div className="upload-header-text">
+          <h1>Prepare Video</h1>
+          <p>Analyze, optimize, and validate your video for platform upload. All processing runs locally.</p>
         </div>
         <Badge variant="warning">Beta</Badge>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      <div className="upload-body">
 
         {/* ── IDLE ── */}
         {status === 'idle' && (
           <DragDropZone
             onFileSelect={startInspection}
-            accept="video/mp4,video/quicktime,video/x-m4v,video/webm"
+            accept="video/mp4,video/quicktime,video/x-m4v,video/webm,.mkv"
           />
         )}
 
         {/* ── EXTRACTING METADATA ── */}
         {status === 'extracting_metadata' && (
           <Card glow style={{ textAlign: 'center', padding: 'var(--space-12)' }}>
-            <h3 style={{ marginBottom: 'var(--space-4)' }}>Reading Metadata</h3>
+            <h3 style={{ marginBottom: 'var(--space-4)' }}>Reading File</h3>
             <ProgressBar indeterminate />
             <p style={{ marginTop: 'var(--space-3)', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
               {stage}
@@ -116,59 +143,60 @@ export default function UploadPage() {
           </Card>
         )}
 
-        {/* ── INSPECTING (worker progress) ── */}
+        {/* ── INSPECTING ── */}
         {status === 'inspecting' && (
           <Card glow>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)' }}>
+            <div className="card-row-header">
               <h3>Inspecting File</h3>
-              <Button variant="ghost" size="sm" onClick={cancel}>
-                Cancel
-              </Button>
+              <Button variant="ghost" size="sm" onClick={cancel}>Cancel</Button>
             </div>
             <InspectionProgress progress={progress} stage={stage} />
-            {mediaInfo && <MediaInfoCard info={mediaInfo} />}
+            {mediaInfo && <MediaInfoGrid info={mediaInfo} />}
           </Card>
         )}
 
         {/* ── READY ── */}
         {status === 'ready' && mediaInfo && (
-          <div className="animate-slide-up" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+          <div className="animate-slide-up upload-body">
             <Card glow>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <h3 style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
+              <div className="card-row-header">
+                <h3>
                   <Icon name="check" size={22} color="var(--color-success)" />
-                  Inspection Complete
+                  Analysis Complete
                 </h3>
-                <Button variant="ghost" size="sm" onClick={reset}>
-                  Change File
-                </Button>
+                <Button variant="ghost" size="sm" onClick={reset}>Change File</Button>
               </div>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
-                Your media has passed validation and is ready for optimization.
+                Your media has been analyzed and is ready for optimization.
               </p>
-              <MediaInfoCard info={mediaInfo} />
+              <MediaInfoGrid info={mediaInfo} />
             </Card>
 
-            {/* Disclaimer */}
-            <Card style={{ background: 'rgba(155,93,229,0.05)', borderColor: 'rgba(155,93,229,0.25)' }}>
-              <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
-                <div style={{ flexShrink: 0, paddingTop: '2px' }}>
-                  <Icon name="info" size={22} color="var(--color-accent-secondary)" />
-                </div>
-                <div>
-                  <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--color-accent-secondary)' }}>
-                    What Prism does and does not guarantee
-                  </h4>
-                  <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', lineHeight: 1.7 }}>
-                    Prism Method optimizes the source file to preserve resolution, frame-rate integrity,
-                    and playback reliability. <strong>Prism cannot control TikTok's server-side
-                    processing.</strong> The final quality delivered to viewers depends entirely on
-                    TikTok's internal encoding policies. No shadow-ban prevention is implied.
-                  </p>
-                  <div style={{ marginTop: 'var(--space-6)' }}>
-                    <Button size="lg" onClick={startOptimization}>
-                      Start Optimization
-                    </Button>
+            <Card className="upload-notice-card">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                {mediaInfo.fps && mediaInfo.fps > 60 && (
+                  <div className="fps-warning">
+                    <strong>120&nbsp;FPS source detected.</strong>{' '}
+                    TikTok-ready output will be capped to 60&nbsp;FPS for platform compatibility.
+                  </div>
+                )}
+                <div className="info-row">
+                  <div className="info-row-icon">
+                    <Icon name="info" size={22} color="var(--color-accent-secondary)" />
+                  </div>
+                  <div className="info-row-body">
+                    <h4>Prism prepares your source for reliable platform upload.</h4>
+                    <p>
+                      Prism Method optimizes the source file to preserve resolution, frame-rate integrity,
+                      and playback reliability. <strong>Prism cannot control TikTok's server-side
+                      processing.</strong> The final quality delivered to viewers depends entirely on
+                      TikTok's internal encoding policies.
+                    </p>
+                    <div className="optimize-action">
+                      <Button size="lg" onClick={startOptimization} id="btn-start-optimization">
+                        Start Optimization
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -178,42 +206,69 @@ export default function UploadPage() {
 
         {/* ── PROCESSING ── */}
         {status === 'processing' && (
-          <Card glow style={{ padding: 'var(--space-10)' }}>
-            <h3 style={{ textAlign: 'center', marginBottom: 'var(--space-2)' }}>Processing Media</h3>
-            <p style={{ textAlign: 'center', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-8)', fontSize: '0.9rem' }}>
-              Running output checks and preparing your file for download…
-            </p>
+          <Card glow className="processing-card">
+            <div className="processing-card-header">
+              <h3>Processing Media</h3>
+              <p>Running optimization and output checks…</p>
+            </div>
             <InspectionProgress progress={progress} stage={stage} />
           </Card>
         )}
 
         {/* ── SUCCESS ── */}
         {status === 'success' && (
-          <Card glow className="animate-slide-up" style={{ textAlign: 'center', padding: 'var(--space-12)' }}>
-            <div style={{ color: 'var(--color-success)', marginBottom: 'var(--space-4)', filter: 'drop-shadow(0 0 12px rgba(6,214,160,0.4))' }}>
+          <Card glow className="success-card animate-slide-up">
+            <div className="success-icon">
               <Icon name="check" size={64} />
             </div>
-            <h3 style={{ marginBottom: 'var(--space-2)' }}>Optimization Complete</h3>
-            <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-8)', maxWidth: '480px', margin: '0 auto var(--space-8)' }}>
-              Your video is ready. {isCompanionInstalled ? (
+            <h3>Ready for Upload</h3>
+            <p className="success-desc">
+              {isCompanionInstalled ? (
                 <strong>Prism Companion is active. Open TikTok Studio to upload.</strong>
               ) : (
                 <>To complete the workflow, install Prism Companion for upload assistance in TikTok Studio.</>
               )}
               <br /><br />
-              Remember — TikTok applies its own server-side encoding after upload.
+              TikTok applies its own server-side encoding after upload.
             </p>
-            <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center' }}>
-              <Button variant="secondary" onClick={reset}>
-                Process Another
-              </Button>
+
+            {transformations && transformations.length > 0 && (
+              <div className="transformations-list">
+                <h4>Transformations Applied</h4>
+                <ul>
+                  {transformations.map((t, idx) => (
+                    <li key={idx}>
+                      <Icon name="check" size={16} color="var(--color-success)" />
+                      <span>{t}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {handoffError && (
+              <div className="handoff-banner error">{handoffError}</div>
+            )}
+            {handoffStatus === 'sent' && (
+              <div className="handoff-banner success">
+                ✓ Prism Companion is opening TikTok Studio and attaching your file.
+              </div>
+            )}
+
+            <div className="success-actions">
+              <Button variant="secondary" onClick={reset} id="btn-process-another">Process Another</Button>
               {outputUrl && (
                 <a href={outputUrl} download={outputFilename || 'prism_output.mp4'} style={{ textDecoration: 'none' }}>
-                  <Button size="lg">
+                  <Button size="lg" id="btn-download-result">
                     <Icon name="download" size={16} style={{ marginRight: '6px' }} />
-                    Download Result
+                    Download
                   </Button>
                 </a>
+              )}
+              {isCompanionInstalled && outputFile && handoffStatus !== 'sent' && (
+                <Button size="lg" onClick={sendToTikTok} id="btn-send-tiktok" style={{ background: 'var(--color-accent-primary)' }}>
+                  Send to TikTok →
+                </Button>
               )}
             </div>
           </Card>
@@ -221,16 +276,14 @@ export default function UploadPage() {
 
         {/* ── ERROR ── */}
         {status === 'error' && (
-          <Card style={{ borderColor: 'rgba(255,77,109,0.3)', background: 'rgba(255,77,109,0.04)' }}>
-            <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'flex-start' }}>
-              <div style={{ flexShrink: 0, paddingTop: '2px' }}>
+          <Card className="error-card">
+            <div className="error-row">
+              <div className="error-row-icon">
                 <Icon name="alert" size={24} color="var(--color-error)" />
               </div>
-              <div style={{ flex: 1 }}>
-                <h3 style={{ color: 'var(--color-error)', marginBottom: 'var(--space-2)' }}>Validation Failed</h3>
-                <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-4)', fontSize: '0.9rem' }}>
-                  {errorMessage || 'An unexpected error occurred.'}
-                </p>
+              <div className="error-row-body">
+                <h3>Processing Failed</h3>
+                <p>{errorMessage || 'An unexpected error occurred.'}</p>
                 <Button onClick={reset}>Try Another File</Button>
               </div>
             </div>
@@ -239,11 +292,9 @@ export default function UploadPage() {
 
         {/* ── CANCELLED ── */}
         {status === 'cancelled' && (
-          <Card style={{ textAlign: 'center', padding: 'var(--space-8)' }}>
-            <h3 style={{ marginBottom: 'var(--space-2)', color: 'var(--color-text-secondary)' }}>Cancelled</h3>
-            <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-6)', fontSize: '0.9rem' }}>
-              Processing was cancelled. Your file was not modified.
-            </p>
+          <Card className="cancelled-card">
+            <h3>Cancelled</h3>
+            <p>Processing was cancelled. Your file was not modified.</p>
             <Button onClick={reset}>Start Over</Button>
           </Card>
         )}

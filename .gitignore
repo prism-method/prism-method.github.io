@@ -27,3 +27,8 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Development artifacts — do not commit to public repo
+audit_output/
+e2e_audit_report.md
+scripts/

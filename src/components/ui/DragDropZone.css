@@ -5,40 +5,39 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: var(--space-16) var(--space-6);
-  border: 2px dashed var(--color-border);
+  padding: var(--space-20) var(--space-6);
+  border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-lg);
-  background: rgba(18, 18, 31, 0.4);
+  background: var(--color-bg-surface);
   cursor: pointer;
   transition: all var(--transition-base);
   overflow: hidden;
 }
 
-.drag-drop-zone::before {
-  content: '';
+.drag-drop-inner-ring {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--color-accent-glow);
-  opacity: 0;
-  transition: opacity var(--transition-base);
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  border-radius: calc(var(--radius-lg) - 4px);
+  border: 2px solid transparent;
+  transition: border-color var(--transition-base), transform var(--transition-base);
   pointer-events: none;
 }
 
 .drag-drop-zone:hover {
-  border-color: var(--color-border-hover);
-  background: rgba(18, 18, 31, 0.6);
+  border-color: var(--color-accent-primary);
+  background: rgba(138, 43, 226, 0.02);
 }
 
 .drag-drop-zone.is-dragging {
   border-color: var(--color-accent-primary);
-  border-style: solid;
 }
 
-.drag-drop-zone.is-dragging::before {
-  opacity: 0.15;
+.drag-drop-zone.is-dragging .drag-drop-inner-ring {
+  border-color: var(--color-accent-primary);
+  transform: scale(0.98);
 }
 
 .drag-drop-input {
@@ -49,12 +48,15 @@
   position: relative;
   z-index: 1;
   pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .drag-drop-icon-wrapper {
   color: var(--color-accent-primary);
   margin-bottom: var(--space-4);
-  filter: drop-shadow(0 0 10px var(--color-accent-glow));
+  filter: drop-shadow(0 0 12px var(--color-accent-glow));
   transition: transform var(--transition-base);
 }
 
@@ -63,15 +65,46 @@
 }
 
 .drag-drop-title {
-  font-size: 1.25rem;
-  margin-bottom: var(--space-2);
+  font-size: 1.5rem;
+  margin-bottom: var(--space-4);
+}
+
+.drag-drop-formats {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.format-badge {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--color-text-secondary);
 }
 
 .drag-drop-desc {
-  color: var(--color-text-secondary);
-  margin-bottom: var(--space-6);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-8);
 }
 
 .drag-drop-action {
   pointer-events: auto;
+  margin-bottom: var(--space-12);
+}
+
+.drag-drop-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  background: rgba(0, 230, 118, 0.05);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(0, 230, 118, 0.1);
 }

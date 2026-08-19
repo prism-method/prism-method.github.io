@@ -16,10 +16,25 @@ export interface MediaInfo {
   width: number | null;
   /** Natural video height in CSS pixels. Null if extraction fails or file has no video track. */
   height: number | null;
-  /** True if the video element detected at least one video track. */
   hasVideo: boolean;
   /** True if the video element detected at least one audio track. */
   hasAudio: boolean;
+  
+  // -- Extended properties filled by FFprobe / Worker analysis --
+  /** Video codec (e.g. "h264", "hevc") */
+  codec?: string;
+  /** FPS (frames per second) */
+  fps?: number;
+  /** Whether the video has variable frame rate (VFR) */
+  isVFR?: boolean;
+  /** Pixel format (e.g. "yuv420p") */
+  pixelFormat?: string;
+  /** Overall bitrate in bps */
+  bitrate?: number;
+  /** Audio codec (e.g. "aac") */
+  audioCodec?: string;
+  /** Audio sample rate in Hz */
+  sampleRate?: number;
 }
 
 // ── Web Worker message protocol ──────────────────────────────────────────────
@@ -27,13 +42,16 @@ export interface MediaInfo {
 /** Messages sent TO the media worker. */
 export type WorkerInMessage =
   | { type: 'INSPECT'; file: File; limitBytes: number }
+  | { type: 'OPTIMIZE'; file: File; mediaInfo: MediaInfo }
   | { type: 'CANCEL' };
 
 /** Messages sent FROM the media worker back to the main thread. */
 export type WorkerOutMessage =
   | { type: 'VALIDATION_ERROR'; reason: string }
   | { type: 'PROGRESS'; percent: number; stage: string }
-  | { type: 'INSPECTION_COMPLETE' }
+  | { type: 'INSPECTION_COMPLETE'; mediaInfo: MediaInfo }
+  | { type: 'OPTIMIZATION_TRANSFORMATIONS'; transformations: string[] }
+  | { type: 'OPTIMIZATION_COMPLETE'; blobUrl: string; filename: string }
   | { type: 'ERROR'; message: string }
   | { type: 'CANCELLED' };
 

@@ -28,6 +28,10 @@ export interface ProcessorState {
   outputUrl: string | null;
   /** Name to use for the downloaded file. */
   outputFilename: string | null;
+  /** The actual output File object, used for Companion handoff. */
+  outputFile: File | null;
+  /** Actual transformations applied during optimization. */
+  transformations: string[];
 }
 
 const initialState: ProcessorState = {
@@ -38,6 +42,8 @@ const initialState: ProcessorState = {
   errorMessage: null,
   outputUrl: null,
   outputFilename: null,
+  outputFile: null,
+  transformations: [],
 };
 
 // ── Metadata extraction (main thread — HTMLVideoElement required) ─────────────
@@ -108,9 +114,8 @@ export interface UseMediaProcessorReturn extends ProcessorState {
    */
   startInspection: (file: File) => void;
   /**
-   * Begin the "optimization" step after the user confirms they want to proceed.
-   * In this phase the output is the inspected file wrapped in a blob URL —
-   * actual re-encoding requires the Prism Engine (future backend integration).
+   * Begin the optimization step.
+   * Dispatches the OPTIMIZE command to the Web Worker to perform actual FFmpeg transcoding.
    */
   startOptimization: () => void;
   /** Cancel an in-progress inspection or optimization. Cleans up the worker. */
@@ -190,7 +195,7 @@ export function useMediaProcessor(): UseMediaProcessorReturn {
 
     const worker = spawnWorker();
 
-    worker.onmessage = (event: MessageEvent<WorkerOutMessage>) => {
+    worker.onmessage = async (event: MessageEvent<WorkerOutMessage>) => {
       const msg = event.data;
 
       switch (msg.type) {
@@ -208,8 +213,45 @@ export function useMediaProcessor(): UseMediaProcessorReturn {
             status: 'ready',
             progress: 100,
             stage: 'Ready for optimization',
+            mediaInfo: msg.mediaInfo,
           }));
           break;
+
+        case 'OPTIMIZATION_TRANSFORMATIONS':
+          setState((prev) => ({
+            ...prev,
+            transformations: msg.transformations,
+          }));
+          break;
+
+        case 'OPTIMIZATION_COMPLETE': {
+          revokeOutputUrl();
+          outputUrlRef.current = msg.blobUrl;
+          
+          try {
+            // Fetch the Blob from the URL created by the worker
+            const res = await fetch(msg.blobUrl);
+            const blob = await res.blob();
+            const outputFile = new File([blob], msg.filename, { type: blob.type });
+
+            setState((prev) => ({
+              ...prev,
+              status: 'success',
+              progress: 100,
+              stage: 'Complete',
+              outputUrl: msg.blobUrl,
+              outputFilename: msg.filename,
+              outputFile,
+            }));
+          } catch (e) {
+            setState((prev) => ({
+              ...prev,
+              status: 'error',
+              errorMessage: 'Failed to construct optimized file object for handoff.',
+            }));
+          }
+          break;
+        }
 
         case 'VALIDATION_ERROR':
           setState((prev) => ({
@@ -254,61 +296,22 @@ export function useMediaProcessor(): UseMediaProcessorReturn {
 
   const startOptimization = useCallback(() => {
     const file = fileRef.current;
-    if (!file) return;
+    if (!file || !state.mediaInfo) return;
 
     setState((prev) => ({
       ...prev,
       status: 'processing',
       progress: 0,
-      stage: 'Preparing output…',
+      stage: 'Starting optimization…',
+      transformations: [], // reset transformations
     }));
 
-    // Architectural note: actual video re-encoding requires the private Prism Engine
-    // (see BROWSER_PROCESSING_BOUNDARY.md). In this browser-first phase the output
-    // is the validated original file. The download filename reflects its processed nature.
-    let progress = 0;
-    const steps = [
-      { p: 20, label: 'Validating output format…' },
-      { p: 45, label: 'Checking stream integrity…' },
-      { p: 70, label: 'Verifying audio sync…' },
-      { p: 90, label: 'Finalizing output…' },
-      { p: 100, label: 'Complete' },
-    ];
-
-    const runStep = (index: number) => {
-      if (index >= steps.length) {
-        // All steps done — create output URL.
-        revokeOutputUrl();
-        const url = URL.createObjectURL(file);
-        outputUrlRef.current = url;
-        const ext = file.name.split('.').pop() || 'mp4';
-        const baseName = file.name.replace(/\.[^.]+$/, '');
-        setState((prev) => ({
-          ...prev,
-          status: 'success',
-          progress: 100,
-          stage: 'Complete',
-          outputUrl: url,
-          outputFilename: `prism_${baseName}.${ext}`,
-        }));
-        return;
-      }
-
-      const step = steps[index];
-      const delay = 350 + Math.random() * 200;
-      setTimeout(() => {
-        progress = step.p;
-        setState((prev) => ({
-          ...prev,
-          progress,
-          stage: step.label,
-        }));
-        runStep(index + 1);
-      }, delay);
-    };
-
-    runStep(0);
-  }, [revokeOutputUrl]);
+    if (!workerRef.current) {
+        workerRef.current = spawnWorker();
+    }
+    
+    workerRef.current.postMessage({ type: 'OPTIMIZE', file, mediaInfo: state.mediaInfo });
+  }, [state.mediaInfo, spawnWorker]);
 
   const cancel = useCallback(() => {
     if (workerRef.current) {
