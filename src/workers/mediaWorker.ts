@@ -10,6 +10,14 @@ function postOut(msg: WorkerOutMessage): void {
   (self as unknown as DedicatedWorkerGlobalScope).postMessage(msg);
 }
 
+function normalizedCodec(codec: string | undefined): string {
+  return (codec ?? '').trim().toLowerCase();
+}
+
+function isBrowserUnsupportedTranscodeCodec(codec: string | undefined): boolean {
+  return ['av1', 'av01'].includes(normalizedCodec(codec));
+}
+
 async function execWithLogs(ff: FFmpeg, args: string[]): Promise<{ exitCode: number; logs: string }> {
   let logs = '';
   const logHandler = ({ message }: { message: string }) => {
@@ -27,7 +35,7 @@ function firstMeaningfulLogLine(logs: string): string | null {
   const lines = logs
     .split('\n')
     .map((line) => line.trim())
-    .filter(Boolean);
+    .filter((line) => line && !/^Aborted\(/i.test(line));
 
   return lines.at(-1) ?? null;
 }
@@ -179,6 +187,15 @@ async function inspect(file: File, limitBytes: number): Promise<void> {
 }
 
 async function optimize(file: File, mediaInfo: MediaInfo): Promise<void> {
+  if (isBrowserUnsupportedTranscodeCodec(mediaInfo.codec)) {
+      postOut({
+        type: 'VALIDATION_ERROR',
+        reason:
+          'This file uses AV1 video. Prism Web currently cannot transcode AV1 to H.264 inside the browser. Export the source as H.264/MP4 first, then run Prism again.',
+      });
+      return;
+  }
+
   const ff = await loadFFmpeg();
   
   const inputName = 'input_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
