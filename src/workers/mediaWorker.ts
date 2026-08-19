@@ -1,7 +1,7 @@
 /// <reference lib="WebWorker" />
 import type { WorkerInMessage, WorkerOutMessage, MediaInfo } from '../types/media';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
+import { fetchFile } from '@ffmpeg/util';
 
 let ffmpeg: FFmpeg | null = null;
 let cancelled = false;
@@ -18,10 +18,10 @@ async function loadFFmpeg(): Promise<FFmpeg> {
     console.log('[FFmpeg]', message);
   });
   
-  const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd';
+  const baseURL = '/ffmpeg';
   await ffmpeg.load({
-    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+    coreURL: `${baseURL}/ffmpeg-core.js`,
+    wasmURL: `${baseURL}/ffmpeg-core.wasm`,
   });
   return ffmpeg;
 }
