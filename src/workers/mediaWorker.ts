@@ -10,6 +10,28 @@ function postOut(msg: WorkerOutMessage): void {
   (self as unknown as DedicatedWorkerGlobalScope).postMessage(msg);
 }
 
+async function execWithLogs(ff: FFmpeg, args: string[]): Promise<{ exitCode: number; logs: string }> {
+  let logs = '';
+  const logHandler = ({ message }: { message: string }) => {
+    logs += message + '\n';
+  };
+
+  ff.on('log', logHandler);
+  const exitCode = await ff.exec(args);
+  ff.off('log', logHandler);
+
+  return { exitCode, logs };
+}
+
+function firstMeaningfulLogLine(logs: string): string | null {
+  const lines = logs
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return lines.at(-1) ?? null;
+}
+
 async function loadFFmpeg(): Promise<FFmpeg> {
   if (ffmpeg) return ffmpeg;
   ffmpeg = new FFmpeg();
@@ -123,12 +145,7 @@ async function inspect(file: File, limitBytes: number): Promise<void> {
   const filename = 'input_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
   await ff.writeFile(filename, await fetchFile(file));
 
-  let stderr = '';
-  const logHandler = ({ message }: { message: string }) => { stderr += message + '\n'; };
-  ff.on('log', logHandler);
-
-  await ff.exec(['-i', filename]);
-  ff.off('log', logHandler);
+  const { logs: stderr } = await execWithLogs(ff, ['-i', filename]);
   
   const parsed = parseFfprobeStderr(stderr);
   await ff.deleteFile(filename);
@@ -216,7 +233,7 @@ async function optimize(file: File, mediaInfo: MediaInfo): Promise<void> {
           needsAudioEncode = true;
           transformations.push(`Audio Codec: ${mediaInfo.audioCodec || 'unknown'} -> aac`);
       }
-      if (mediaInfo.sampleRate !== 48000 && mediaInfo.sampleRate !== 44100) {
+      if (mediaInfo.sampleRate !== 48000) {
           needsAudioEncode = true;
           transformations.push(`Audio Sample Rate: ${mediaInfo.sampleRate || 'unknown'} Hz -> 48000 Hz`);
       }
@@ -264,19 +281,37 @@ async function optimize(file: File, mediaInfo: MediaInfo): Promise<void> {
   };
   ff.on('progress', progressHandler);
 
-  await ff.exec(args);
+  const { exitCode: optimizeExitCode, logs: optimizeLogs } = await execWithLogs(ff, args);
   ff.off('progress', progressHandler);
 
   if (cancelled) {
       return; 
   }
 
+  if (optimizeExitCode !== 0) {
+      const detail = firstMeaningfulLogLine(optimizeLogs);
+      postOut({
+        type: 'VALIDATION_ERROR',
+        reason: detail ? `Optimization failed: ${detail}` : 'Optimization failed before output validation.',
+      });
+      await ff.deleteFile(inputName).catch(()=>{});
+      await ff.deleteFile(outputName).catch(()=>{});
+      return;
+  }
+
   postOut({ type: 'PROGRESS', percent: 99, stage: 'Validating output...' });
-  let outStderr = '';
-  const outLogHandler = ({ message }: { message: string }) => { outStderr += message + '\n'; };
-  ff.on('log', outLogHandler);
-  await ff.exec(['-i', outputName]);
-  ff.off('log', outLogHandler);
+  const { exitCode: probeExitCode, logs: outStderr } = await execWithLogs(ff, ['-i', outputName]);
+
+  if (probeExitCode !== 0 && !outStderr.includes('Stream #')) {
+      const detail = firstMeaningfulLogLine(outStderr);
+      postOut({
+        type: 'VALIDATION_ERROR',
+        reason: detail ? `Output validation failed: ${detail}` : 'Output validation failed: unable to inspect optimized file.',
+      });
+      await ff.deleteFile(inputName).catch(()=>{});
+      await ff.deleteFile(outputName).catch(()=>{});
+      return;
+  }
   
   const outParsed = parseFfprobeStderr(outStderr);
   const validationErrors: string[] = [];
